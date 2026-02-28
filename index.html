@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Give online to support our church ministry." />
+  <title>Give — Your Church Name</title>
+
+  <!-- Favicon placeholder -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🙏</text></svg>" />
+
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!--  PAGE HEADER                                          -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <header class="page-header">
+    <!-- Replace the src below with your church logo URL -->
+    <!-- <img src="assets/logo.png" alt="Church Logo" class="church-logo" /> -->
+    <div class="logo-placeholder">✝</div>
+    <h1 id="church-name-display">Your Church Name</h1>
+    <p>Online Giving — Secure &amp; Instant</p>
+  </header>
+
+  <div class="accent-bar"></div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!--  GIVING FORM                                          -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <main class="form-container">
+    <div class="form-card">
+
+      <!-- Global Error Banner -->
+      <div id="error-banner" class="error-banner" role="alert"></div>
+
+      <form id="giving-form" novalidate>
+
+        <!-- ── DONOR DETAILS ──────────────────────────────── -->
+        <p class="section-title">Your Details</p>
+
+        <div class="field">
+          <label for="donor_name">Full Name</label>
+          <input
+            type="text"
+            id="donor_name"
+            name="donor_name"
+            placeholder="e.g. Chisomo Banda"
+            autocomplete="name"
+            required
+          />
+          <span class="field-error" id="donor_name-error"></span>
+        </div>
+
+        <div class="field">
+          <label for="donor_phone">
+            Phone Number
+            <!-- Required for mobile money and Telegram receipt -->
+          </label>
+          <input
+            type="tel"
+            id="donor_phone"
+            name="donor_phone"
+            placeholder="e.g. 0881234567 or +265881234567"
+            autocomplete="tel"
+            required
+          />
+          <span class="field-error" id="donor_phone-error"></span>
+        </div>
+
+        <div class="field">
+          <label for="donor_email">
+            Email Address
+            <span class="optional">(optional — for receipt)</span>
+          </label>
+          <input
+            type="email"
+            id="donor_email"
+            name="donor_email"
+            placeholder="e.g. chisomo@email.com"
+            autocomplete="email"
+          />
+          <span class="field-error" id="donor_email-error"></span>
+        </div>
+
+        <!-- ── GIVING DETAILS ────────────────────────────── -->
+        <p class="section-title">Giving Details</p>
+
+        <div class="field">
+          <label for="giving_type">Giving Type</label>
+          <select id="giving_type" name="giving_type" required>
+            <option value="" disabled selected>Select giving type…</option>
+            <option value="tithe">Tithe</option>
+            <option value="offering">Offering</option>
+            <option value="seed">Seed</option>
+            <option value="project_pledge">Project Pledge</option>
+            <option value="personal_pledge">Personal Pledge</option>
+            <option value="special">Special / One-Off Giving</option>
+          </select>
+          <span class="field-error" id="giving_type-error"></span>
+        </div>
+
+        <!-- Project Name — only visible for Project Pledge -->
+        <div class="field" id="project-name-field">
+          <label for="project_name">Project Name</label>
+          <input
+            type="text"
+            id="project_name"
+            name="project_name"
+            placeholder="e.g. New Sanctuary Building Fund"
+          />
+          <span class="field-error" id="project_name-error"></span>
+        </div>
+
+        <div class="field">
+          <label for="amount">Amount (MWK)</label>
+          <div class="amount-wrapper">
+            <span class="amount-prefix">MWK</span>
+            <input
+              type="number"
+              id="amount"
+              name="amount"
+              placeholder="0"
+              min="500"
+              step="100"
+              inputmode="numeric"
+              required
+            />
+          </div>
+          <span class="field-error" id="amount-error"></span>
+        </div>
+
+        <div class="field">
+          <label for="notes">
+            Message / Notes
+            <span class="optional">(optional)</span>
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            placeholder="Add a personal note, prayer request, or description of your giving…"
+          ></textarea>
+        </div>
+
+        <!-- ── PAYMENT METHOD ────────────────────────────── -->
+        <p class="section-title">Payment Method</p>
+
+        <div class="payment-methods" role="radiogroup" aria-label="Payment method">
+
+          <div class="payment-method-option">
+            <input type="radio" name="payment_method" id="method_airtel" value="airtel_money" />
+            <label for="method_airtel">
+              <span class="method-icon">📱</span>
+              Airtel Money
+            </label>
+          </div>
+
+          <div class="payment-method-option">
+            <input type="radio" name="payment_method" id="method_mpamba" value="mpamba" />
+            <label for="method_mpamba">
+              <span class="method-icon">📲</span>
+              TNM Mpamba
+            </label>
+          </div>
+
+          <div class="payment-method-option">
+            <input type="radio" name="payment_method" id="method_bank" value="bank_transfer" />
+            <label for="method_bank">
+              <span class="method-icon">🏦</span>
+              Bank Transfer
+            </label>
+          </div>
+
+          <div class="payment-method-option">
+            <input type="radio" name="payment_method" id="method_card" value="card" />
+            <label for="method_card">
+              <span class="method-icon">💳</span>
+              Card
+            </label>
+          </div>
+
+        </div>
+        <span class="field-error" id="payment_method-error"></span>
+
+        <!-- ── SUBMIT ─────────────────────────────────────── -->
+        <button type="submit" id="submit-btn" class="submit-btn">
+          <span class="btn-text">🙏 &nbsp;Give Now</span>
+          <div class="spinner"></div>
+        </button>
+
+      </form>
+    </div>
+
+    <!-- Footer security note -->
+    <p class="form-footer">
+      <span class="secure-badge">🔒 Payments secured by PayChangu</span>
+      &nbsp;·&nbsp; Your details are safe and encrypted.
+    </p>
+
+  </main>
+
+  <script src="assets/form.js"></script>
+</body>
+</html>

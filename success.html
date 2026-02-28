@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giving Confirmed — Your Church Name</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="logo-placeholder">✝</div>
+    <h1 id="church-name-display">Your Church Name</h1>
+    <p>Online Giving</p>
+  </header>
+
+  <div class="accent-bar"></div>
+
+  <main class="result-page">
+    <div class="result-card">
+      <span class="result-icon">🙏</span>
+      <h2>Thank You!</h2>
+      <p>
+        Your giving has been received and recorded.<br />
+        May God multiply what you have sown into His kingdom.
+      </p>
+
+      <div id="ref-section" style="display:none;">
+        <p style="font-size:0.85rem;color:#888;margin-bottom:4px;">Your Transaction Reference</p>
+        <div class="ref-box" id="tx-ref">—</div>
+        <p style="font-size:0.8rem;color:#aaa;margin-bottom:16px;">
+          Please save this reference for any queries with the church finance team.
+        </p>
+      </div>
+
+      <p id="receipt-note" style="font-size:0.875rem;color:#666;display:none;">
+        📧 A receipt has been sent to your email address.
+      </p>
+
+      <br />
+      <a href="index.html" class="btn-back">Give Again</a>
+    </div>
+  </main>
+
+  <script>
+    // Extract transaction reference from URL query string
+    (function () {
+      var params   = new URLSearchParams(window.location.search);
+      var ref      = params.get("ref") || "";
+      var email    = params.get("email") || "";
+
+      if (ref) {
+        var refEl      = document.getElementById("tx-ref");
+        var refSection = document.getElementById("ref-section");
+        if (refEl)      refEl.textContent = ref;
+        if (refSection) refSection.style.display = "block";
+      }
+
+      if (email) {
+        var receiptNote = document.getElementById("receipt-note");
+        if (receiptNote) receiptNote.style.display = "block";
+      }
+
+      // Update church name if stored in sessionStorage
+      var churchName = sessionStorage.getItem("churchName");
+      var nameEl     = document.getElementById("church-name-display");
+      if (churchName && nameEl) {
+        nameEl.textContent = churchName;
+        document.title = "Giving Confirmed — " + churchName;
+      }
+    })();
+  </script>
+
+</body>
+</html>

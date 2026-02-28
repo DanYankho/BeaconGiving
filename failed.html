@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Unsuccessful — Your Church Name</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>❌</text></svg>" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="logo-placeholder">✝</div>
+    <h1 id="church-name-display">Your Church Name</h1>
+    <p>Online Giving</p>
+  </header>
+
+  <div class="accent-bar"></div>
+
+  <main class="result-page">
+    <div class="result-card">
+      <span class="result-icon">😔</span>
+      <h2 class="error">Payment Not Completed</h2>
+      <p>
+        Your payment was not completed. This could be because:<br /><br />
+        • The payment was cancelled<br />
+        • There was an issue with your payment method<br />
+        • The session timed out<br /><br />
+        No money has been charged. Please try again.
+      </p>
+
+      <div id="ref-section" style="display:none;">
+        <p style="font-size:0.85rem;color:#888;margin-bottom:4px;">Reference</p>
+        <div class="ref-box" id="tx-ref">—</div>
+      </div>
+
+      <br />
+      <a href="index.html" class="btn-back">Try Again</a>
+
+      <p style="font-size:0.8rem;color:#aaa;margin-top:16px;">
+        If you continue to experience issues, please contact the church finance team<br />
+        and quote your reference number.
+      </p>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var params   = new URLSearchParams(window.location.search);
+      var ref      = params.get("ref") || "";
+
+      if (ref) {
+        var refEl      = document.getElementById("tx-ref");
+        var refSection = document.getElementById("ref-section");
+        if (refEl)      refEl.textContent = ref;
+        if (refSection) refSection.style.display = "block";
+      }
+
+      var churchName = sessionStorage.getItem("churchName");
+      var nameEl     = document.getElementById("church-name-display");
+      if (churchName && nameEl) {
+        nameEl.textContent = churchName;
+        document.title = "Payment Unsuccessful — " + churchName;
+      }
+    })();
+  </script>
+
+</body>
+</html>
