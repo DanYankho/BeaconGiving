@@ -6,7 +6,7 @@
 // ──────────────────────────────────────────────────────────────
 //  CONFIGURATION — update GAS_URL after deploying your backend
 // ──────────────────────────────────────────────────────────────
-var GAS_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+var GAS_URL = "https://script.google.com/macros/s/AKfycbzzB3rKx_F1hWV6sF2ZWSCXewTTvQ5lsJD_SMpxqQi3PDuK-6N6-HMF7_BWrJ-LX9W4/exec";
 
 // ──────────────────────────────────────────────────────────────
 //  DOM READY
@@ -64,19 +64,31 @@ function initForm() {
 function loadCategories() {
   var churchNameEl = document.getElementById("church-name-display");
 
-  fetch(GAS_URL + "?path=categories")
-    .then(function (res) { return res.json(); })
+  // GET requests to GAS are simple requests (no preflight) but GAS sometimes
+  // issues a redirect that strips CORS headers. We wrap in a try/catch so
+  // the form still works even if this call fails -- categories are
+  // already hardcoded in the HTML as a fallback.
+  fetch(GAS_URL + "?path=categories", { redirect: "follow" })
+    .then(function (res) {
+      if (!res.ok) throw new Error("non-200");
+      return res.json();
+    })
     .then(function (data) {
       if (data.success) {
-        // Update church name in the header if returned
         if (data.church_name && churchNameEl) {
           churchNameEl.textContent = data.church_name;
           document.title = "Give — " + data.church_name;
         }
+        // Update minimum amount if returned
+        if (data.min_amount) {
+          MIN_AMOUNT = data.min_amount;
+          var amountInput = document.getElementById("amount");
+          if (amountInput) amountInput.min = data.min_amount;
+        }
       }
     })
     .catch(function () {
-      // Silent fail — form still works with static HTML options
+      // Silent fail -- form is fully functional with its hardcoded HTML options.
     });
 }
 
@@ -96,10 +108,14 @@ function handleSubmit() {
 
   setLoading(true);
 
+  // NOTE: Content-Type must be "text/plain" to avoid a CORS preflight
+  // request. Google Apps Script cannot respond to OPTIONS requests,
+  // so any header that triggers a preflight (like "application/json")
+  // will be blocked by the browser. GAS parses the JSON body manually.
   fetch(GAS_URL + "?path=initiate", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(formData)
+    method:      "POST",
+    headers:     { "Content-Type": "text/plain;charset=utf-8" },
+    body:        JSON.stringify(formData)
   })
   .then(function (res) { return res.json(); })
   .then(function (data) {
