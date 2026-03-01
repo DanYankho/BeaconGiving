@@ -19,10 +19,10 @@
 
 // ── Shared secret — must match GAS_EMAIL_SECRET in Cloudflare ──
 // Pick any random string (e.g. a UUID) and set it in both places.
-var EMAIL_SECRET = "REPLACE_WITH_YOUR_OWN_RANDOM_SECRET";
+var EMAIL_SECRET = "beacon-giving-2025-abc123";
 
 // ── Church name (shown in email footer) ──────────────────────
-var CHURCH_NAME  = "Your Church Name";
+var CHURCH_NAME  = "Beacon House";
 
 // ============================================================
 //  doPost — receives email requests from the Cloudflare Worker
