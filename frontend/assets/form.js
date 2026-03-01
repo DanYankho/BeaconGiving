@@ -7,7 +7,7 @@
 //  CONFIGURATION — paste your Cloudflare Worker URL here after
 //  deploying. Format: https://church-giving-api.YOUR_NAME.workers.dev
 // ──────────────────────────────────────────────────────────────
-var API_BASE = "https://church-giving-api.danyankho.workers.dev/";
+var API_BASE = "https://church-giving-api.danyankho.workers.dev";
 
 var MIN_AMOUNT = 500;
 
