@@ -11,8 +11,8 @@ compatibility_flags = ["nodejs_compat"]
 # ----------------------------------------------------------------
 
 [vars]
-CHURCH_NAME        = "Your Church Name"
-FRONTEND_BASE_URL  = "https://yourusername.github.io/church-giving"
+CHURCH_NAME        = "Beacon House"
+FRONTEND_BASE_URL  = "https://danyankho.github.io/BeaconGiving/"
 MIN_AMOUNT         = "500"
 
 # ----------------------------------------------------------------
