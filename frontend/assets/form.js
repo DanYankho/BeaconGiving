@@ -7,7 +7,7 @@
 //  CONFIGURATION — paste your Cloudflare Worker URL here after
 //  deploying. Format: https://church-giving-api.YOUR_NAME.workers.dev
 // ──────────────────────────────────────────────────────────────
-var API_BASE = "https://church-giving-api.danyankho.workers.dev";
+var API_BASE = "https://church-giving-api.danyankho.workers.dev/";
 
 var MIN_AMOUNT = 500;
 
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 //  LOAD CATEGORIES from Worker — updates church name if set
 // ──────────────────────────────────────────────────────────────
 function loadCategories() {
-  fetch(API_BASE + "/api/categories")
+  fetch(API_BASE + "api/categories")
     .then(function (res) { return res.json(); })
     .then(function (data) {
       if (!data.success) return;
@@ -96,7 +96,7 @@ function handleSubmit() {
   setLoading(true);
 
   // Cloudflare Workers support full CORS including application/json
-  fetch(API_BASE + "/api/initiate", {
+  fetch(API_BASE + "api/initiate", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(formData),
