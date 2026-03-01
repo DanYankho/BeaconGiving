@@ -11,9 +11,9 @@
 }
 
 :root {
-  --primary:       #6B6B51;
-  --primary-light: #D8CCC0;
-  --accent:        #c8a951;
+  --primary:       #1E2E2E;
+  --primary-light: #6B6B52;
+  --accent:        #D8CCC0;
   --success:       #1a7a4a;
   --danger:        #8b0000;
   --text:          #1a1a1a;
