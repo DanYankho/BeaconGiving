@@ -1,0 +1,29 @@
+name = "church-giving-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ----------------------------------------------------------------
+#  ENVIRONMENT VARIABLES
+#  Secrets (API keys) must be added via the Cloudflare dashboard
+#  or CLI: wrangler secret put SECRET_NAME
+#  Non-secret config can live here as [vars]
+# ----------------------------------------------------------------
+
+[vars]
+CHURCH_NAME        = "Your Church Name"
+FRONTEND_BASE_URL  = "https://yourusername.github.io/church-giving"
+MIN_AMOUNT         = "500"
+
+# ----------------------------------------------------------------
+#  SECRETS — add these via CLI after deploying:
+#
+#  wrangler secret put PAYCHANGU_SECRET_KEY
+#  wrangler secret put SUPABASE_URL
+#  wrangler secret put SUPABASE_SERVICE_KEY
+#  wrangler secret put GAS_EMAIL_URL          ← deployed GAS web app URL
+#  wrangler secret put GAS_EMAIL_SECRET       ← must match EMAIL_SECRET in EmailService.gs
+#  wrangler secret put ADMIN_EMAIL
+#  wrangler secret put TELEGRAM_BOT_TOKEN
+#  wrangler secret put TELEGRAM_ADMIN_CHAT_ID
+# ----------------------------------------------------------------
