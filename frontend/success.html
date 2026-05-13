@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
-
   <header class="page-header">
     <div class="logo-placeholder">✝</div>
     <h1 id="church-name-display">Your Church Name</h1>
@@ -21,10 +20,7 @@
     <div class="result-card">
       <span class="result-icon">🙏</span>
       <h2>Thank You!</h2>
-      <p>
-        Your giving has been received and recorded.<br />
-        May God multiply what you have sown into His kingdom.
-      </p>
+      <p id="status-message">Verifying your transaction...</p>
 
       <div id="ref-section" style="display:none;">
         <p style="font-size:0.85rem;color:#888;margin-bottom:4px;">Your Transaction Reference</p>
@@ -38,8 +34,12 @@
         📧 A receipt has been sent to your email address.
       </p>
 
+      <div id="countdown-timer" style="margin-top:20px; font-size:0.9rem; color:#666;">
+        Redirecting in <span id="countdown">10</span> seconds...
+      </div>
+
       <br />
-      <a href="index.html" class="btn-back">Give Again</a>
+      <a href="index.html" class="btn-back" id="btn-back" style="display:none;">Give Again</a>
     </div>
   </main>
 
@@ -50,18 +50,6 @@
       var ref      = params.get("ref") || "";
       var email    = params.get("email") || "";
 
-      if (ref) {
-        var refEl      = document.getElementById("tx-ref");
-        var refSection = document.getElementById("ref-section");
-        if (refEl)      refEl.textContent = ref;
-        if (refSection) refSection.style.display = "block";
-      }
-
-      if (email) {
-        var receiptNote = document.getElementById("receipt-note");
-        if (receiptNote) receiptNote.style.display = "block";
-      }
-
       // Update church name if stored in sessionStorage
       var churchName = sessionStorage.getItem("churchName");
       var nameEl     = document.getElementById("church-name-display");
@@ -69,8 +57,120 @@
         nameEl.textContent = churchName;
         document.title = "Giving Confirmed — " + churchName;
       }
+
+      // Verify transaction with backend
+      if (ref) {
+        verifyTransaction(ref);
+      } else {
+        document.getElementById("status-message").textContent = 
+          "We could not verify your transaction. Please contact us with your reference number.";
+      }
+
+      function verifyTransaction(ref) {
+        // Determine the backend URL - in production this would be your worker URL
+        // For GitHub Pages, we'll use a relative path to the worker
+        var backendUrl = "/api/transaction-status?ref=" + encodeURIComponent(ref);
+        
+        fetch(backendUrl)
+          .then(function(res) {
+            if (!res.ok) {
+              throw new Error('Backend error: ' + res.status);
+            }
+            return res.json();
+          })
+          .then(function(data) {
+            if (data.success) {
+              var status = data.status || data.transaction?.status || "";
+              var donorName = data.donor_name || data.transaction?.donor_name || "";
+              var amount = data.amount || data.transaction?.amount || "";
+              
+              if (status === "success") {
+                document.getElementById("status-message").textContent = 
+                  "Thank you for your giving of MWK " + amount + ", " + donorName + "!";
+                
+                // Show reference section
+                var refEl      = document.getElementById("tx-ref");
+                var refSection = document.getElementById("ref-section");
+                if (refEl)      refEl.textContent = ref;
+                if (refSection) refSection.style.display = "block";
+                
+                // Show receipt note if email provided
+                if (email) {
+                  var receiptNote = document.getElementById("receipt-note");
+                  if (receiptNote) receiptNote.style.display = "block";
+                }
+                
+                // Start countdown redirect
+                startCountdown(10, "index.html");
+              } else {
+                document.getElementById("status-message").textContent = 
+                  "Your transaction is currently " + status + ". Please wait for confirmation.";
+                  
+                // Still show reference for reference
+                var refEl      = document.getElementById("tx-ref");
+                var refSection = document.getElementById("ref-section");
+                if (refEl)      refEl.textContent = ref;
+                if (refSection) refSection.style.display = "block";
+                
+                // Start countdown redirect anyway
+                startCountdown(15, "index.html");
+              }
+            } else {
+              document.getElementById("status-message").textContent = 
+                "We could not verify your transaction. Please contact us with your reference number.";
+                
+              // Show reference anyway for user reference
+              var refEl      = document.getElementById("tx-ref");
+              var refSection = document.getElementById("ref-section");
+              if (refEl)      refEl.textContent = ref;
+              if (refSection) refSection.style.display = "block";
+              
+              // Start countdown redirect
+              startCountdown(15, "index.html");
+            }
+          })
+          .catch(function(err) {
+            console.error("Transaction verification error:", err);
+            document.getElementById("status-message").textContent = 
+              "We could not verify your transaction. Please contact us with your reference number.";
+              
+              // Show reference anyway for user reference
+              var refEl      = document.getElementById("tx-ref");
+              var refSection = document.getElementById("ref-section");
+              if (refEl)      refEl.textContent = ref;
+              if (refSection) refSection.style.display = "block";
+              
+              // Start countdown redirect
+              startCountdown(15, "index.html");
+          });
+      }
+
+      function startCountdown(seconds, redirectUrl) {
+        var countdownEl = document.getElementById("countdown");
+        var backBtn = document.getElementById("btn-back");
+        var countdownTimer = document.getElementById("countdown-timer");
+        
+        if (!countdownEl) return;
+        
+        function updateCountdown() {
+          seconds--;
+          if (seconds <= 0) {
+            countdownEl.textContent = "0";
+            // Redirect after showing 0 for a moment
+            setTimeout(function() {
+              window.location.href = redirectUrl;
+            }, 500);
+          } else {
+            countdownEl.textContent = seconds;
+            setTimeout(updateCountdown, 1000);
+          }
+        }
+        
+        // Show back button immediately for users who want to navigate manually
+        backBtn.style.display = "inline-block";
+        updateCountdown();
+      }
     })();
   </script>
-
 </body>
 </html>
