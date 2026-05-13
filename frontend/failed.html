@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
-
   <header class="page-header">
     <div class="logo-placeholder">✝</div>
     <h1 id="church-name-display">Your Church Name</h1>
@@ -20,22 +19,19 @@
   <main class="result-page">
     <div class="result-card">
       <span class="result-icon">😔</span>
-      <h2 class="error">Payment Not Completed</h2>
-      <p>
-        Your payment was not completed. This could be because:<br /><br />
-        • The payment was cancelled<br />
-        • There was an issue with your payment method<br />
-        • The session timed out<br /><br />
-        No money has been charged. Please try again.
-      </p>
+      <h2 class="error" id="status-message">Verifying your transaction...</h2>
 
       <div id="ref-section" style="display:none;">
         <p style="font-size:0.85rem;color:#888;margin-bottom:4px;">Reference</p>
         <div class="ref-box" id="tx-ref">—</div>
       </div>
 
+      <div id="countdown-timer" style="margin-top:20px; font-size:0.9rem; color:#666;">
+        Redirecting in <span id="countdown">10</span> seconds...
+      </div>
+
       <br />
-      <a href="index.html" class="btn-back">Try Again</a>
+      <a href="index.html" class="btn-back" id="btn-back" style="display:none;">Try Again</a>
 
       <p style="font-size:0.8rem;color:#aaa;margin-top:16px;">
         If you continue to experience issues, please contact the church finance team<br />
@@ -45,25 +41,138 @@
   </main>
 
   <script>
+    // Extract transaction reference from URL query string
     (function () {
       var params   = new URLSearchParams(window.location.search);
       var ref      = params.get("ref") || "";
 
-      if (ref) {
-        var refEl      = document.getElementById("tx-ref");
-        var refSection = document.getElementById("ref-section");
-        if (refEl)      refEl.textContent = ref;
-        if (refSection) refSection.style.display = "block";
-      }
-
+      // Update church name if stored in sessionStorage
       var churchName = sessionStorage.getItem("churchName");
       var nameEl     = document.getElementById("church-name-display");
       if (churchName && nameEl) {
         nameEl.textContent = churchName;
         document.title = "Payment Unsuccessful — " + churchName;
       }
+
+      // Verify transaction with backend
+      if (ref) {
+        verifyTransaction(ref);
+      } else {
+        document.getElementById("status-message").textContent = 
+          "We could not verify your transaction. Please contact us with your reference number.";
+      }
+
+      function verifyTransaction(ref) {
+        // Determine the backend URL - in production this would be your worker URL
+        // For GitHub Pages, we'll use a relative path to the worker
+        var backendUrl = "/api/transaction-status?ref=" + encodeURIComponent(ref);
+        
+        fetch(backendUrl)
+          .then(function(res) {
+            if (!res.ok) {
+              throw new Error('Backend error: ' + res.status);
+            }
+            return res.json();
+          })
+          .then(function(data) {
+            if (data.success) {
+              var status = data.status || data.transaction?.status || "";
+              var donorName = data.donor_name || data.transaction?.donor_name || "";
+              var amount = data.amount || data.transaction?.amount || "";
+              
+              if (status === "failed") {
+                document.getElementById("status-message").textContent = 
+                  "Your payment of MWK " + amount + " was not completed.";
+                  
+                // Show reference section
+                var refEl      = document.getElementById("tx-ref");
+                var refSection = document.getElementById("ref-section");
+                if (refEl)      refEl.textContent = ref;
+                if (refSection) refSection.style.display = "block";
+              } else if (status === "success") {
+                document.getElementById("status-message").textContent = 
+                  "Actually, your payment was successful! Redirecting to confirmation...";
+                  
+                // Show reference section
+                var refEl      = document.getElementById("tx-ref");
+                var refSection = document.getElementById("ref-section");
+                if (refEl)      refEl.textContent = ref;
+                if (refSection) refSection.style.display = "block";
+                
+                // Redirect to success page instead
+                setTimeout(function() {
+                  window.location.href = "success.html?ref=" + ref;
+                }, 2000);
+                return; // Exit early
+              } else {
+                document.getElementById("status-message").textContent = 
+                  "Your transaction is currently " + status + ". Please wait for final status.";
+                  
+                // Still show reference for reference
+                var refEl      = document.getElementById("tx-ref");
+                var refSection = document.getElementById("ref-section");
+                if (refEl)      refEl.textContent = ref;
+                if (refSection) refSection.style.display = "block";
+              }
+                
+              // Start countdown redirect
+              startCountdown(15, "index.html");
+            } else {
+              document.getElementById("status-message").textContent = 
+                "We could not verify your transaction. Please contact us with your reference number.";
+                
+              // Show reference anyway for user reference
+              var refEl      = document.getElementById("tx-ref");
+              var refSection = document.getElementById("ref-section");
+              if (refEl)      refEl.textContent = ref;
+              if (refSection) refSection.style.display = "block";
+              
+              // Start countdown redirect
+              startCountdown(15, "index.html");
+            }
+          })
+          .catch(function(err) {
+            console.error("Transaction verification error:", err);
+            document.getElementById("status-message").textContent = 
+              "We could not verify your transaction. Please contact us with your reference number.";
+              
+              // Show reference anyway for user reference
+              var refEl      = document.getElementById("tx-ref");
+              var refSection = document.getElementById("ref-section");
+              if (refEl)      refEl.textContent = ref;
+              if (refSection) refSection.style.display = "block";
+              
+              // Start countdown redirect
+              startCountdown(15, "index.html");
+          });
+      }
+
+      function startCountdown(seconds, redirectUrl) {
+        var countdownEl = document.getElementById("countdown");
+        var backBtn = document.getElementById("btn-back");
+        var countdownTimer = document.getElementById("countdown-timer");
+        
+        if (!countdownEl) return;
+        
+        function updateCountdown() {
+          seconds--;
+          if (seconds <= 0) {
+            countdownEl.textContent = "0";
+            // Redirect after showing 0 for a moment
+            setTimeout(function() {
+              window.location.href = redirectUrl;
+            }, 500);
+          } else {
+            countdownEl.textContent = seconds;
+            setTimeout(updateCountdown, 1000);
+          }
+        }
+        
+        // Show back button immediately for users who want to navigate manually
+        backBtn.style.display = "inline-block";
+        updateCountdown();
+      }
     })();
   </script>
-
 </body>
 </html>
