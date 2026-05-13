@@ -20,7 +20,7 @@
 //  CORS — allow GitHub Pages (and any origin) to call this API
 // ============================================================
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Origin":  "https://danyankho.github.io/church-giving",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age":       "86400",
@@ -67,13 +67,20 @@ export default {
         return handleVerify(ref, env);
       }
 
-      // ── POST /api/initiate ─────────────────────────────────
-      if (method === "POST" && path === "/api/initiate") {
-        const body = await request.json().catch(() => ({}));
-        return handleInitiate(body, env);
-      }
+  // ── POST /api/initiate ─────────────────────────────────
+  if (method === "POST" && path === "/api/initiate") {
+    const body = await request.json().catch(() => ({}));
+    return handleInitiate(body, env);
+  }
 
-      // ── POST /api/webhook ──────────────────────────────────
+  // ── GET /api/transaction-status ───────────────────────────────
+  if (method === "GET" && path === "/api/transaction-status") {
+    const url = new URL(request.url);
+    const ref = url.searchParams.get("ref");
+    return handleTransactionStatus(ref, env);
+  }
+
+  // ── POST /api/webhook ──────────────────────────────────
       if (method === "POST" && path === "/api/webhook") {
         const rawBody  = await request.text();
         const signature = request.headers.get("x-paychangu-signature") || "";
@@ -115,15 +122,21 @@ function handleCategories(env) {
 }
 
 // ============================================================
-//  HANDLER: GET /api/verify/:ref
+//  HANDLER: GET /api/transaction-status
 // ============================================================
-async function handleVerify(ref, env) {
+async function handleTransactionStatus(ref, env) {
   if (!ref) return jsonError("Reference is required");
 
   const tx = await DB.findByRef(env, ref);
   if (!tx) return jsonError("Transaction not found", 404);
 
-  return jsonOk({ transaction: tx });
+  // Return simplified status info for frontend
+  return jsonOk({
+    status: tx.status,
+    amount: tx.amount,
+    donor_name: tx.donor_name,
+    // Only include non-sensitive info needed for display
+  });
 }
 
 // ============================================================
@@ -147,8 +160,14 @@ async function handleInitiate(body, env) {
     return corsResponse(JSON.stringify({ success: false, errors }), 422);
   }
 
-  // ── Generate tx_ref ────────────────────────────────────────
-  const txRef = generateTxRef();
+   // ── Generate tx_ref ────────────────────────────────────────
+   const txRef = generateTxRef();
+   
+   // Validate transaction reference length (Supabase TEXT column limit is safe for our format)
+   if (txRef.length > 100) {
+     await DB.logError(env, "handleInitiate", "Transaction reference too long", txRef);
+     return jsonError("Transaction reference too long. Please try again.");
+   }
 
   // ── Build PayChangu payload ────────────────────────────────
   const nameParts   = body.donor_name.trim().split(" ");
@@ -185,53 +204,57 @@ async function handleInitiate(body, env) {
     },
   };
 
-  // ── Call PayChangu API ─────────────────────────────────────
-  let checkoutUrl;
-  try {
-    const pcRes  = await fetch("https://api.paychangu.com/payment", {
-      method:  "POST",
-      headers: {
-        "Authorization": `Bearer ${env.PAYCHANGU_SECRET_KEY}`,
-        "Content-Type":  "application/json",
-        "Accept":        "application/json",
-      },
-      body: JSON.stringify(paychanguPayload),
-    });
+   // ── Call PayChangu API ─────────────────────────────────────
+   let checkoutUrl;
+   try {
+     const pcRes  = await fetch("https://api.paychangu.com/payment", {
+       method:  "POST",
+       headers: {
+         "Authorization": `Bearer ${env.PAYCHANGU_SECRET_KEY}`,
+         "Content-Type":  "application/json",
+         "Accept":        "application/json",
+       },
+       body: JSON.stringify(paychanguPayload),
+     });
 
-    const pcData = await pcRes.json();
+     const pcData = await pcRes.json();
 
-    if (!pcRes.ok || pcData.status !== "success") {
-      console.error("PayChangu error:", JSON.stringify(pcData));
-      await DB.logError(env, "handleInitiate", "PayChangu API error", JSON.stringify(pcData));
-      return jsonError(pcData.message || "Payment gateway error. Please try again.");
-    }
+     if (!pcRes.ok || pcData.status !== "success") {
+       console.error("PayChangu error:", JSON.stringify(pcData));
+       await DB.logError(env, "handleInitiate", "PayChangu API error", JSON.stringify(pcData));
+       return jsonError(pcData.message || "Payment gateway error. Please try again.");
+     }
 
-    checkoutUrl = pcData.data?.checkout_url || pcData.data?.link;
-    if (!checkoutUrl) {
-      await DB.logError(env, "handleInitiate", "No checkout URL returned", JSON.stringify(pcData));
-      return jsonError("Payment gateway did not return a checkout URL.");
-    }
+     checkoutUrl = pcData.data?.checkout_url || pcData.data?.link;
+     if (!checkoutUrl) {
+       await DB.logError(env, "handleInitiate", "No checkout URL returned", JSON.stringify(pcData));
+       return jsonError("Payment gateway did not return a checkout URL.");
+     }
+   } catch (err) {
+     await DB.logError(env, "handleInitiate.fetch", err.message, "");
+     return jsonError("Could not reach payment gateway. Please try again.");
+   }
 
-  } catch (err) {
-    await DB.logError(env, "handleInitiate.fetch", err.message, "");
-    return jsonError("Could not reach payment gateway. Please try again.");
-  }
+   // ── Save pending transaction ───────────────────────────────
+   const insertSuccess = await DB.insertPending(env, {
+     donor_name:      body.donor_name.trim(),
+     donor_email:     body.donor_email?.trim() || "",
+     donor_phone:     body.donor_phone.trim(),
+     amount:          Number(body.amount),
+     currency:        "MWK",
+     giving_type:     body.giving_type,
+     payment_method:  body.payment_method,
+     transaction_ref: txRef,
+     project_name:    body.project_name?.trim() || "",
+     notes:           body.notes?.trim() || "",
+   });
 
-  // ── Save pending transaction ───────────────────────────────
-  await DB.insertPending(env, {
-    donor_name:      body.donor_name.trim(),
-    donor_email:     body.donor_email?.trim() || "",
-    donor_phone:     body.donor_phone.trim(),
-    amount:          Number(body.amount),
-    currency:        "MWK",
-    giving_type:     body.giving_type,
-    payment_method:  body.payment_method,
-    transaction_ref: txRef,
-    project_name:    body.project_name?.trim() || "",
-    notes:           body.notes?.trim() || "",
-  });
+   if (!insertSuccess) {
+     await DB.logError(env, "handleInitiate", "Failed to insert pending transaction", txRef);
+     return jsonError("Could not save transaction. Please try again.");
+   }
 
-  return jsonOk({ checkoutUrl, txRef });
+   return jsonOk({ checkoutUrl, txRef });
 }
 
 // ============================================================
@@ -247,13 +270,15 @@ async function handleWebhook(rawBody, signature, env) {
   }
 
   // ── Verify HMAC signature ──────────────────────────────────
-  if (signature) {
-    const valid = await verifyHmac(rawBody, env.PAYCHANGU_SECRET_KEY, signature);
-    if (!valid) {
-      await DB.logError(env, "handleWebhook", "INVALID SIGNATURE — rejected", rawBody.slice(0, 300));
-      // Return 200 so PayChangu stops retrying, but don't process
-      return jsonOk({ message: "rejected" });
-    }
+  if (!signature) {
+    await DB.logError(env, "handleWebhook", "MISSING SIGNATURE — rejected", rawBody.slice(0, 300));
+    return corsResponse(JSON.stringify({ success: false, error: "Missing signature" }), 401);
+  }
+
+  const valid = await verifyHmac(rawBody, env.PAYCHANGU_SECRET_KEY, signature);
+  if (!valid) {
+    await DB.logError(env, "handleWebhook", "INVALID SIGNATURE — rejected", rawBody.slice(0, 300));
+    return corsResponse(JSON.stringify({ success: false, error: "Invalid signature" }), 401);
   }
 
   const txRef  = body.tx_ref || body.txRef || "";
@@ -389,7 +414,6 @@ async function supabaseFetch(env, method, path, body) {
   const opts = {
     method,
     headers: {
-      "apikey":        env.SUPABASE_SERVICE_KEY,
       "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
       "Content-Type":  "application/json",
       "Prefer":        method === "POST" ? "return=minimal" : "return=representation",
@@ -501,14 +525,13 @@ const Notify = {
     return sendTelegram(env, msg);
   },
 
-  // ── Donor Telegram (success) ──────────────────────────────
-  // Note: requires donor to have started a chat with your bot first.
-  // This is a Phase 2 feature once donor chat IDs are captured.
-  async donorTelegram(env, tx) {
-    // Placeholder — donor Telegram requires capturing their chat_id at sign-up.
-    // Log intent for now.
-    console.log(`Donor Telegram (pending chat_id capture): ${tx.donor_phone}`);
-  },
+   // ── Donor Telegram (success) ──────────────────────────────
+   // Note: requires donor to have started a chat with your bot first.
+   // This is a Phase 2 feature once donor chat IDs are captured.
+   async donorTelegram(env, tx) {
+     // TODO: Implement donor Telegram notifications once donor chat_id
+     // capture system is built
+   },
 };
 
 // ============================================================
