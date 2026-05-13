@@ -96,18 +96,19 @@ function handleSubmit() {
 
    setLoading(true);
 
-   fetch(WORKER_URL + "/api/initiate", {
-     method:  "POST",
-     headers: { "Content-Type": "application/json" },
-     body:    JSON.stringify(formData)
-   })
-   .then(function (res) { 
-     // Handle non-200 responses
-     if (!res.ok) {
-       throw new Error('Server error: ' + res.status);
-     }
-     return res.json(); 
-   })
+    fetch(WORKER_URL + "/api/initiate", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(formData)
+    })
+    .then(function (res) {
+      return res.json().then(function(data) {
+        if (!res.ok) {
+          throw new Error(data.error || (data.errors && data.errors[0]) || "Server error: " + res.status);
+        }
+        return data;
+      });
+    })
    .then(function (data) {
      if (data.success && data.checkoutUrl) {
        // Reset form before redirecting to prevent accidental resubmission
