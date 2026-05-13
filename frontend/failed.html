@@ -65,7 +65,7 @@
       function verifyTransaction(ref) {
         // Determine the backend URL - in production this would be your worker URL
         // For GitHub Pages, we'll use a relative path to the worker
-        var backendUrl = "/api/transaction-status?ref=" + encodeURIComponent(ref);
+        var backendUrl = "https://church-giving-api.danyankho.workers.dev/api/transaction-status?ref=" + encodeURIComponent(ref);
         
         fetch(backendUrl)
           .then(function(res) {
