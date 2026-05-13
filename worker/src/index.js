@@ -20,7 +20,7 @@
 //  CORS — allow GitHub Pages (and any origin) to call this API
 // ============================================================
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin":  "https://danyankho.github.io/church-giving/",
+  "Access-Control-Allow-Origin":  "https://danyankho.github.io",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age":       "86400",
